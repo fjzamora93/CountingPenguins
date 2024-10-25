@@ -1,7 +1,7 @@
 # Entorno virtual
 env/
 .venv/
-data
+
 tiles_coords
 
 

@@ -1,0 +1,5 @@
+train: ../data/images/train  # Ruta a las imágenes de entrenamiento
+val: ../data/images/val      # Ruta a las imágenes de validación
+
+nc: 1                        # Número de clases
+names: ['penguin']           # Nombre de la clase
