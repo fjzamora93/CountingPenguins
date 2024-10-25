@@ -1,12 +1,9 @@
 # Entorno virtual
 env/
 .venv/
-yolov5
-square_maps
-maps
 data
 tiles_coords
-documentacion
+
 
 # Archivos de caché y otros archivos innecesarios
 __pycache__/

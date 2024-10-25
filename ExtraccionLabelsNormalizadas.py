@@ -3,12 +3,28 @@ import os
 import pandas as pd
 import rasterio
 
-CSV_FILE = os.path.join('tiles_coords', 'coords_62.csv')
+CSV_FILE_ORIGINAL = "G:\\.shortcut-targets-by-id\\1pYgV5EIk4-LapLNhlCwpQaDAzuqNffXG\\doctorado_albert\\conteo_pinguinos\\chinstraps_eca56.csv"
+csv_file_formateado = os.path.join('tiles_coords', 'yolo_coords.csv')
 IMGS_PATH = os.path.join('tiles_coords', 'subtiles')
 
 
+def formatear_datos_yolo(csv_file:str) -> pd.DataFrame:
+    """
+    Convierte el formato de entrada Id, X, Y, en un formato de salia:
+    class,x_center,y_center,width,height
+    """
+    df = pd.read_csv(csv_file, encoding='ISO-8859-1')
+    df_copy = pd.DataFrame()
+    df_copy['class'] = df['Id']
+    df_copy['x_center'] = df['X']
+    df_copy['y_center'] = df['Y']
+    df_copy['width'] = 30
+    df_copy['height'] = 30
+    df_copy.to_csv(csv_file_formateado, index=False)
+    return df
 
-def filtrar_datos_tile(csv_file: str, tiff_file: str, output_file_name: str) -> None:
+
+def normalizar_datos(csv_file: str, tiff_file: str, output_file_name: str) -> None:
     """
     Filtra los datos de un tile específico y los convierte al formato YOLO.
     
@@ -37,7 +53,11 @@ def filtrar_datos_tile(csv_file: str, tiff_file: str, output_file_name: str) -> 
         (data['y_center'] >= min_y) & (data['y_center'] <= max_y)
     ]
 
-    print("X_center: ", data['x_center'], "Normalizado: " ((data['x_center'] - min_x) / width), 'Ancho: ', width)
+     # Imprimir valores normalizados (corregido)
+    print("X_center: ", data['x_center'], 
+          "Normalizado: ", ((data['x_center'] - min_x) / width), 
+          'Ancho: ', width)
+        
 
     # Crear el DataFrame en el formato YOLO
     normalized_df = filtered_data.copy()
@@ -59,4 +79,4 @@ def filtrar_datos_tile(csv_file: str, tiff_file: str, output_file_name: str) -> 
 for img in os.listdir(IMGS_PATH):
     if img.endswith('.tiff') or img.endswith('.tif'):  # Asegúrate de que solo procese archivos TIFF
         tiff_file = os.path.join(IMGS_PATH, img)
-        filtrar_datos_tile(CSV_FILE, tiff_file, img.split('.')[0])
+        normalizar_datos(csv_file_formateado, tiff_file, img.split('.')[0])
