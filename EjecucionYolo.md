@@ -5,6 +5,10 @@ Una vez están clasificados los conjunto de entrenamiento y test, se procede a l
 
 ````bash
 python train.py --img 640 --batch 16 --epochs 100 --data ../data/penguin_dataset.yaml --weights yolov5s.pt --name penguin_detection
+
+//YOLOV7
+python train.py --img 640 --batch 16 --epochs 100 --data ../data/penguin_dataset.yaml --cfg cfg/training/yolov7.yaml --weights 'yolov7.pt' --device cpu
+
 ````
 
 

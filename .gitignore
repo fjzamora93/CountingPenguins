@@ -1,7 +1,8 @@
 # Entorno virtual
 env/
 .venv/
-
+yolov7
+yolov5
 tiles_coords
 
 
