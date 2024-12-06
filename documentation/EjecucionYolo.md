@@ -82,12 +82,15 @@ rm -r C:\Users\Administrador.CRISASUSESTUDIO\Desktop\projects\CountingPenguins\r
 
 Para realizar nuevas predicciones, se puede ejecutar el siguiente comando:
 
+datasets/penguin_dataset/images/train
+
 ```bash
 yolo detect predict model=runs/detect/train/weights/best.pt source=./test_images
 
 # Para guardar las métricas
 
-yolo detect predict model=runs/detect/train/weights/best.pt source=./test_images --save-txt
+yolo detect predict model=runs/detect/train5/weights/best.pt source=./datasets/penguin_dataset/images/train save_txt=True
+yolo detect predict model=runs/detect/train5/weights/best.pt source=./datasets/penguin_dataset/images/val save_txt=True
 
 ```
 - model=runs/detect/train/weights/best.pt: Esta es la ruta al modelo entrenado, específicamente el mejor modelo guardado (best.pt), que está en la carpeta de runs/detect/train/weights. Si tienes otro archivo de pesos que deseas usar, reemplaza la ruta.

@@ -4,7 +4,10 @@ env/
 yolov7
 yolov5
 tiles_coords
-
+runs/
+datasets/
+coords/
+cut_tiles/
 
 # Archivos de caché y otros archivos innecesarios
 __pycache__/
