@@ -1,10 +1,7 @@
 # Secuencia de pasos a seguir
 
-1. Cargar la imagen y recortarla en tiles 500x500 
-   - 1.RecorteTile_500x500.ipynb -> las losetas recortadas irán a la carpeta **'cut_tiles'**
-
-2. Extraer los metadatos dentro de un csv para cada tile de 500x500
-   - 2.ExtraccionMetadatosTile_500x500.ipynb
-
-3. Hacer la separacion de tiles y preparar el sistema de directoiros
-    - (leer EjecuciionYolo.md)
+- **Notebook 1**: Se recorta cada tile gigante (52, 62, etc) en tiles pequeñitos de 20 filas y 20 columnas (aproximadamente dará como resultado 500x500, aunque no exactamente).
+- **Notebook 2**: OPCIONAL. Se extraen las coordenadas de cada tile y se guardan en coords_per_tile. Puesto que no es necesitamos las coordenadas de cada tile, sino de los subrecortes, este paso no es necesario.
+- **Notebook 3**: Se asignan las labels en formato txt a cada pequeño subrecorte de 500x500 y se NORMALIZAN (segunda parte del notebook).
+- **Notebook 4**: Se clasifican los conjuntos de train y val. Las imágenes provienen de cut_tiles. Las coordenadas están en coords.
+- **Notebook 5**: Se entrena el modelo YOLOv5 con los datos de train y val.
