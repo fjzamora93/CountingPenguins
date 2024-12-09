@@ -1,0 +1,28 @@
+TILES VÁLIDOS:
+
+
+13,14,15,
+
+
+
+
+
+
+
+
+TILES YA GUARDADOS y válidos:
+23 -> muchos pinguinos
+24 -> muchos pinguinos
+52, 62, 72, 14, 63
+61 -> tiene muchas rocas
+
+POCOS PINGUINOS
+22
+53
+82
+
+81
+
+# OTROS TILES INTERESANTES
+
+70 contiene focas

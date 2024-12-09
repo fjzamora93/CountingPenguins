@@ -1,6 +1,7 @@
 # Entorno virtual
 env/
 .venv/
+venv/
 yolov7
 yolov5
 tiles_coords
@@ -8,6 +9,7 @@ runs/
 datasets/
 coords/
 cut_tiles/
+datasets.zip
 
 # Archivos de caché y otros archivos innecesarios
 __pycache__/
