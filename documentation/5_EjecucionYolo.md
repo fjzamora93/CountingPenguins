@@ -62,7 +62,7 @@ Ahora que está todo organizado, podemos ejecutar el comando.
 
 **yolov8**
 ```bash
-yolo train model=yolov8n.pt data=./datasets/penguin_dataset.yaml epochs=100 imgsz=640 batch=16 device=cpu
+yolo train model=yolov8n.pt data=./datasets/penguin_dataset.yaml epochs=100 imgsz=500 batch=16 device=cpu
 ```
 
 ## Carpetas weights y runs
