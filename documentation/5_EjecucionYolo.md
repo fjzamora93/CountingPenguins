@@ -89,10 +89,22 @@ yolo detect predict model=runs/detect/train/weights/best.pt source=./test_images
 
 # Para guardar las métricas
 
-yolo detect predict model=runs/detect/train5/weights/best.pt source=./datasets/penguin_dataset/images/train save_txt=True
-yolo detect predict model=runs/detect/train5/weights/best.pt source=./datasets/penguin_dataset/images/val save_txt=True
+yolo detect predict model=runs/train4/weights/best.pt source=./datasets/test save_txt=True
+
+yolo detect predict model=runs/train4/weights/best.pt source=./datasets/penguin_dataset/images/val save_txt=True
 
 ```
+
+# Posibles fallos del modelo
+
+- Rebajar el nivel de confianza. Si el nivel de confianza es muy alto, no reportará resultados, así que puede ser bueno rebajarlo.
+yolo detect predict model=runs/train4/weights/best.pt source=./datasets/test conf=0.01 iou=0.3 save=True save_txt=True
+
+
+
+
+
+
 - model=runs/detect/train/weights/best.pt: Esta es la ruta al modelo entrenado, específicamente el mejor modelo guardado (best.pt), que está en la carpeta de runs/detect/train/weights. Si tienes otro archivo de pesos que deseas usar, reemplaza la ruta.
 
 - source=./test_images: Especifica la carpeta donde están las imágenes que quieres probar. En este caso, las imágenes están en ./test_images. Si están en otro lugar, solo cambia la ruta.

@@ -9,7 +9,7 @@ from rasterio.errors import RasterioIOError
 import numpy as np
 import shutil
 
-#valid_tiles = [13, 14, 15, 22, 23, 24, 52, 53, 61, 62, 63, 72, 81, 82]  
+#valid_tiles = [13, 14, 15, 22, 23, 24, 35, 44, 45, 51, 52, 53, 54, 61, 62, 63, 70, 71, 72, 73, 81, 82]  
 
 orthomosiac_coords = os.path.join('coords', 'yolo_coords.csv')
 coords_dir_sin_normalizar = os.path.join('coords', 'labels_sin_normalizar')
