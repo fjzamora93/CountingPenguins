@@ -13,8 +13,8 @@ def hello():
 def generar_txt_yolo(
     subrecorte_dir: str, 
     csv_file: str = 'coords/yolo_coords.csv',  # Asegúrate de que este archivo tenga las coordenadas no normalizadas
-    coords_dir: str = 'coords/labels'  # Directorio donde se guardarán los archivos .txt generados
-) -> None:
+    coords_dir: str = 'coords/labels_sin_normalizar'  # Directorio donde se guardarán los archivos .txt generados
+) -> pd.DataFrame:
     """
     Genera archivos de etiquetas YOLO para cada tile basado en coordenadas no normalizadas.
 
@@ -63,27 +63,27 @@ def generar_txt_yolo(
             )
 
     print(f"Archivos .txt generados en {coords_dir}")
+    return filtered_data
+
+
 
 
 
 
 
 def normalize_yolo_coords(
-    tiff_file: str,  # ruta de la imagen TIFF
-    txt_file_coords: str, 
+    tiff_file: str,  
+    coords_sin_normalizar: pd.DataFrame, 
     output_file: str,
 ) -> None:
     """
     Normaliza todas las coordenadas del dataset completo al formato YOLO.
     
     Args:
-    - txt_file_coords: str - Ruta al archivo TXT con todas las coordenadas en formato YOLO (Id, x_center, y_center, width, height).
-    - tiff_file: str - Ruta al archivo TIFF que define el área de referencia. Se obtienen así los límites.
+    - tiff_file: str - Ruta al archivo TIFF que define el área de referencia.
+    - coords_sin_normalizar: pd.DataFrame - DataFrame con coordenadas (Id, x_center, y_center, width, height).
     - output_file: str - Nombre del archivo de salida con las coordenadas normalizadas.
     """
-    # Cargar datos del archivo TXT
-    data = pd.read_csv(txt_file_coords, delimiter=' ', encoding='ISO-8859-1', header=None, names=['class', 'x_center', 'y_center', 'width', 'height'])
-
     # Abrir el archivo TIFF para obtener metadatos
     with rasterio.open(tiff_file) as src:
         transform = src.transform
@@ -95,18 +95,18 @@ def normalize_yolo_coords(
         min_x, max_y = top_left
         max_x, min_y = bottom_right
 
-    # Filtrar los puntos dentro del área total (opcional, por si hay datos fuera del rango del TIFF)
-    data = data[
-        (data['x_center'] >= min_x) & (data['x_center'] <= max_x) &
-        (data['y_center'] >= min_y) & (data['y_center'] <= max_y)
+    # Filtrar los puntos dentro del área total (opcional)
+    coords_sin_normalizar = coords_sin_normalizar[
+        (coords_sin_normalizar[1] >= min_x) & (coords_sin_normalizar[1] <= max_x) &
+        (coords_sin_normalizar[2] >= min_y) & (coords_sin_normalizar[2] <= max_y)
     ]
 
     # Normalizar las coordenadas y dimensiones
-    data['x_center'] = (data['x_center'] - min_x) / (max_x - min_x)  # Normalización en X
-    data['y_center'] = (data['y_center'] - min_y) / (max_y - min_y)  # Normalización en Y
-    data['width'] = data['width'] / width  # Normalización del ancho
-    data['height'] = data['height'] / height  # Normalización de la altura
+    coords_sin_normalizar[1] = (coords_sin_normalizar[1] - min_x) / (max_x - min_x)  # Normalización en X
+    coords_sin_normalizar[2] = (coords_sin_normalizar[2] - min_y) / (max_y - min_y)  # Normalización en Y
+    coords_sin_normalizar[3] = coords_sin_normalizar[3] / width  # Normalización del ancho
+    coords_sin_normalizar[4] = coords_sin_normalizar[4] / height  # Normalización de la altura
 
     # Guardar el dataset en formato YOLO
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    data.to_csv(output_file, index=False, header=False, sep=' ')
+    coords_sin_normalizar.to_csv(output_file, index=False, header=False, sep=' ')

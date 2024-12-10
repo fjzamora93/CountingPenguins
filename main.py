@@ -10,6 +10,12 @@ import shutil
 
 valid_tiles = [22, 13, 14, 15]
 
+orthomosiac_coords = os.path.join('coords', 'yolo_coords.csv')
+coords_dir_sin_normalizar = os.path.join('coords', 'labels_sin_normalizar')
+coords_dir_normalized = os.path.join('coords', 'labels_normalized')
+os.makedirs(coords_dir_sin_normalizar, exist_ok=True)
+os.makedirs(coords_dir_normalized, exist_ok=True)
+
 # PARTE 0: ITERAMOS SOBRE LAS IMÁGENES PARA RECORTARLAS
 
 
@@ -19,10 +25,8 @@ for n_tile in valid_tiles:
     print('_________________________________________________________')
     NUM_TILE = n_tile
     path_doctorado = 'G:\\.shortcut-targets-by-id\\1pYgV5EIk4-LapLNhlCwpQaDAzuqNffXG\\doctorado_albert\\conteo_pinguinos'
-    subrecortes_dir = os.path.join('cut_tiles', f'tiles_500x500_{NUM_TILE}')
+    subrecortes_dir = os.path.join('cut_tiles')
     os.makedirs(subrecortes_dir, exist_ok=True)
-    if not os.path.exists(subrecortes_dir):
-        os.makedirs(subrecortes_dir)
 
     image_name = f"recortes/recorte_{NUM_TILE}.tif"
     tiff_file = os.path.join(path_doctorado, image_name)
@@ -41,8 +45,6 @@ for n_tile in valid_tiles:
 
 
     # PARTE 2 (OPCIONAL): EXTRACCIÓN DE METADATOS PARA CADA SUBRECORTE INDIVIUAL
-
-    orthomosiac_coords = os.path.join('coords', 'yolo_coords.csv')
     df_orthomosaic = pd.read_csv(orthomosiac_coords, encoding='ISO-8859-1')
     print("Datos Originales: \n", df_orthomosaic.head())
 
@@ -51,47 +53,36 @@ for n_tile in valid_tiles:
         (df_orthomosaic['x_center'] >= min_x) & (df_orthomosaic['x_center'] <= max_x) &
         (df_orthomosaic['y_center'] >= min_y) & (df_orthomosaic['y_center'] <= max_y)
     ]
-
     filtered_data.to_csv(os.path.join('coords', 'coords_per_tile' ,f'coords_{NUM_TILE}.csv'), index=False)
-    filtered_data.head()
+    print(f"Datos filtrados guardados en 'coords/coords_per_tile/coords_{NUM_TILE}.csv'.")
 
-
-# PARTE 3: ASIGNACIÓN DE LABELS EN TXT A CADA SUBRECORTE
-"""
-Todas las coordenadas irán al mismo directorio coords/labels_sin_normalizar.
-Allí se guardarán los archivos .txt con las coordenadas en formato YOLO.
-Posteriormente, se normalizarán.
-"""
-coords_dir_sin_normalizar = "coords/labels_sin_normalizar" 
-coords_dir_normalized = "coords/labels_normalized"
-os.makedirs(coords_dir_sin_normalizar, exist_ok=True)
-os.makedirs(coords_dir_normalized, exist_ok=True)
-
-#! AVERIGUAR SI HAY ALGUNA CONSTANTE QUE IMPIDE QUE CAMBIE DE DIRECTORIO
-# Iterar sobre cada directorio en la carpeta 'cut_tiles'
-for n_dir in os.listdir('cut_tiles'):
-    dir_path = os.path.join('cut_tiles', n_dir)
-    if os.path.isdir(dir_path):
-        # Aplicar la función a cada subdirectorio
-        yolo_fun.generar_txt_yolo(subrecorte_dir=dir_path, csv_file=orthomosiac_coords, coords_dir=coords_dir_sin_normalizar)
+    # PARTE 3: ASIGNACIÓN DE LABELS EN TXT A CADA SUBRECORTE
+    yolo_fun.generar_txt_yolo(subrecorte_dir=subrecortes_dir)
+   
+    
 
 
 # Iteramos para normalizar las coordenadas de cara archivo.txt
 for file in os.listdir(coords_dir_sin_normalizar):
+    df_sin_normalizar = pd.read_csv(os.path.join(coords_dir_sin_normalizar, file), sep=' ', header=None)
+    name_subrecorte = os.path.splitext(file)[0]
+    subrecorte_file = os.path.join('cut_tiles', f"{name_subrecorte}.tiff")
+
+    print(f"Normalizando archivo {file}...")
     coords_file = os.path.join(coords_dir_sin_normalizar, file)
     output_file = os.path.join(coords_dir_normalized, file)
     
     yolo_fun.normalize_yolo_coords(
-        tiff_file=tiff_file,
-        txt_file_coords=coords_file, 
-        output_file=output_file, 
+        tiff_file = subrecorte_file,
+        coords_sin_normalizar = df_sin_normalizar, 
+        output_file = output_file, 
     )
 
 
 # PARTE 4: CLASIFICAR CONJUNTOS DE TRAIN Y VAL
 for n_tile in valid_tiles:
     counter = 0
-    subrecorte_dir = os.path.join('cut_tiles', f'tiles_500x500_{n_tile}')
+    subrecorte_dir = os.path.join('cut_tiles')
     for img in os.listdir(subrecorte_dir):
         try:
             img_name = os.path.splitext(img)[0]  # Divide entre el nombre del archivo y la extensión
