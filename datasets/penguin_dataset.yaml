@@ -1,7 +1,0 @@
-train: C:/Users/Administrador.CRISASUSESTUDIO/Desktop/projects/CountingPenguins/datasets/penguin_dataset/images/train
-val: C:/Users/Administrador.CRISASUSESTUDIO/Desktop/projects/CountingPenguins/datasets/penguin_dataset/images/val
-
-
-nc: 1                        # Número de clases
-names: ['penguin']           # Nombre de la clase
-

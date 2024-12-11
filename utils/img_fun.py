@@ -69,7 +69,8 @@ def crop_tile_into_subrecortes(
         num_tile: int,
         coords_csv: str = './coords/yolo_coords.csv',
         rows: int = 20,
-        cols: int = 20
+        cols: int = 20,
+        is_negative: bool = False
 ) -> None:
     """
     Recorta una imagen grande del ortmosoaico en subrecortes de aproximadamente 500x500 píxeles,
@@ -123,10 +124,7 @@ def crop_tile_into_subrecortes(
                     (coords_df["y_center"] >= min_y) & (coords_df["y_center"] <= max_y)
                 ]
 
-                # Verificar si hay coordenadas en el recorte
-                if filtered_coords.empty:
-                    continue  # No guardar el recorte si no hay coordenadas dentro
-
+             
                 # Crear ventana de recorte
                 window = Window(left, upper, tile_width, tile_height)
                 cropped_image = src.read(window=window)
@@ -139,7 +137,19 @@ def crop_tile_into_subrecortes(
                     "transform": rasterio.windows.transform(window, src.transform)
                 })
 
-                output_path = f"{output_dir}/tile_{num_tile}_subrecorte_{i * cols + j + 1}.tiff"
-                with rasterio.open(output_path, 'w', **cropped_meta) as dst:
-                    dst.write(cropped_image)
-            
+                if is_negative:
+                    if filtered_coords.empty:
+                        print("Coordenadas vacías... guardando")
+                        filename = f"negative_{i * cols + j + 1}.tiff"
+                        output_path = f"{output_dir}/{filename}"
+                        with rasterio.open(output_path, 'w', **cropped_meta) as dst:
+                            dst.write(cropped_image)
+                else:
+                    # Solo guardar si hay coordenadas
+                    if filtered_coords.empty:
+                        continue  # No guardar imágenes sin coordenadas si no queremos negativos
+                    filename = f"tile_{num_tile}_subrecorte_{i * cols + j + 1}.tiff"
+                    output_path = f"{output_dir}/{filename}"
+                    with rasterio.open(output_path, 'w', **cropped_meta) as dst:
+                        dst.write(cropped_image)
+                

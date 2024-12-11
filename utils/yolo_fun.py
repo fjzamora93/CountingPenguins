@@ -100,7 +100,6 @@ def normalize_yolo_coords(
         (coords_sin_normalizar[2] >= min_y) & (coords_sin_normalizar[2] <= max_y)
     ]
 
-    #! NORMALIZACIÓN
     """
     Hay discrepancias entre el sistema de coordenadas utilizado y el que espera YOLO.
     Esta parte es necesario revisarla con cautela.
@@ -118,6 +117,7 @@ def normalize_yolo_coords(
 
 
 
+#! NO FUNCIONA
 def visualizar_cajas(
     imagen_path: str, 
     coords_normalizadas: pd.DataFrame, 
@@ -165,7 +165,7 @@ def visualizar_cajas(
     plt.show()
 
 
-
+#! NO FUNCIONA
 def draw_boxes(image_path, coords_df, box_width=30, box_height=30):
     """
     Dibuja cajas alrededor de las coordenadas dadas en un DataFrame sobre una imagen.

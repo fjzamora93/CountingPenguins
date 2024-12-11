@@ -56,14 +56,47 @@ Dentro ese directorio encontraremos información ESENCIAL sobre donde se van a b
   "runs_dir": "C:\\Users\\Administrador.CRISASUSESTUDIO\\Desktop\\projects\\CountingPenguins\\runs",
 ```
 
-## Ejecución del comando de entrenamiento
 
-Ahora que está todo organizado, podemos ejecutar el comando.
 
-**yolov8**
+
+# yolov8: ejecución de entrenamiento
+
+Existen varios parámetros que hay que tener en cuenta:
+
+- Tamaño del batch. A mayor tamaño, mejor resultado, auqnue será más lento. Para pruebas iniciales comienza por 16, y después sube a 32 y 64.
+  
+- Tamaño de las imágenes. El tamaño de las imágenes debe ser divisible por 32 (por ejemplo, 512). No es conveniente aumentar las imágenes sin un propósito concreto, ya que esto puede provocar distorsión. Normalmetne lo del tamaño se hace al contrario, es decir, tomar imágenes grandes y reducirlas.. o si la distorisión no va a ser significativa.
+
+
+
+Existen varias versiones dle modelo yolov8, cada una con distintas características.  A continuación explicamos algunos
+
+### Yolov8 nano
+
+Es rápido, pero no muy preciso. Viene bien para hacer pruebas rápidas.
+
 ```bash
-yolo train model=yolov8n.pt data=./datasets/penguin_dataset.yaml epochs=100 imgsz=500 batch=16 device=cpu
+yolo train model=yolov8n.pt data=./datasets/penguin_dataset.yaml epochs=100 imgsz=512 batch=16 device=cpu
 ```
+
+### Yolov8 M
+
+Es más lento, pero más preciso. Viene bien para hacer pruebas siguientes al anterior.
+
+```bash
+yolo train model=yolov8m.pt data=./datasets/penguin_dataset.yaml epochs=100 imgsz=512 batch=32 device=cpu
+
+```
+
+### Yolov8 L
+
+Es el más lento, pero el más preciso. Viene bien para hacer pruebas finales.
+
+```bash
+yolo train model=yolov8l.pt data=./datasets/penguin_dataset.yaml epochs=100 imgsz=512 batch=64 device=cpu
+```
+
+
 
 ## Carpetas weights y runs
 
@@ -97,10 +130,12 @@ yolo detect predict model=runs/train4/weights/best.pt source=./datasets/penguin_
 
 # Posibles fallos del modelo
 
-- Rebajar el nivel de confianza. Si el nivel de confianza es muy alto, no reportará resultados, así que puede ser bueno rebajarlo.
+Rebajar el nivel de confianza. Si el nivel de confianza es muy alto, no reportará resultados, así que puede ser bueno rebajarlo.
+  
+```bash
 yolo detect predict model=runs/train4/weights/best.pt source=./datasets/test conf=0.01 iou=0.3 save=True save_txt=True
 
-
+```
 
 
 
