@@ -76,7 +76,7 @@ Existen varias versiones dle modelo yolov8, cada una con distintas característi
 Es rápido, pero no muy preciso. Viene bien para hacer pruebas rápidas.
 
 ```bash
-yolo train model=yolov8n.pt data=./datasets/penguin_dataset.yaml epochs=100 imgsz=512 batch=16 device=cpu
+yolo train model=yolov8n.pt data=./datasets/penguin_dataset_windows.yaml epochs=100 imgsz=512 batch=16 device=cpu
 ```
 
 ### Yolov8 M
