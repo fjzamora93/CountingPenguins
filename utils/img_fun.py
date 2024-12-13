@@ -68,8 +68,8 @@ def crop_tile_into_subrecortes(
         output_dir: str,
         num_tile: int,
         coords_csv: str = './coords/yolo_coords.csv',
-        rows: int = 20,
-        cols: int = 20,
+        rows: int = 10,
+        cols: int = 10,
         is_negative: bool = False
 ) -> None:
     """
@@ -148,7 +148,7 @@ def crop_tile_into_subrecortes(
                     # Solo guardar si hay coordenadas
                     if filtered_coords.empty:
                         continue  # No guardar imágenes sin coordenadas si no queremos negativos
-                    filename = f"tile_{num_tile}_subrecorte_{i * cols + j + 1}.tiff"
+                    filename = f"{num_tile}_{i * cols + j + 1}.tiff"
                     output_path = f"{output_dir}/{filename}"
                     with rasterio.open(output_path, 'w', **cropped_meta) as dst:
                         dst.write(cropped_image)

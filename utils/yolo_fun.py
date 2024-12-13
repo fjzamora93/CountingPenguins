@@ -14,9 +14,9 @@ def hello():
 
 def generar_txt_yolo(
     subrecorte_dir: str, 
-    csv_file: str = 'coords/yolo_coords.csv',  # Asegúrate de que este archivo tenga las coordenadas no normalizadas
-    coords_dir: str = 'coords/labels_sin_normalizar'  # Directorio donde se guardarán los archivos .txt generados
-) -> pd.DataFrame:
+    csv_file: str = 'coords/yolo_coords.csv', 
+    coords_dir: str = 'coords/labels_sin_normalizar'  
+) -> None:
     """
     Genera archivos de etiquetas YOLO para cada tile basado en coordenadas no normalizadas.
 
@@ -26,10 +26,7 @@ def generar_txt_yolo(
     - coords_dir (str): Directorio donde se guardarán los archivos .txt generados.
     """
     # Cargar el CSV con las coordenadas no normalizadas
-    data = pd.read_csv(csv_file, header=None, names=['class', 'x_center', 'y_center', 'width', 'height'])
-
-    # Convertir las columnas a tipos numéricos
-    data = data.drop(index=0)
+    data = pd.read_csv(csv_file, names=['class', 'x_center', 'y_center', 'width', 'height', 'tile'], skiprows=1)
 
     data['x_center'] = pd.to_numeric(data['x_center'])
     data['y_center'] = pd.to_numeric(data['y_center'])
@@ -42,13 +39,17 @@ def generar_txt_yolo(
     # Obtener los nombres de las imágenes (tiles)
     image_files = [f for f in os.listdir(subrecorte_dir) if f.endswith(('.tif', '.png', '.tiff'))]
 
+    if not image_files:
+        print("No se encontraron imágenes en el directorio especificado.")
+        return
+
     for image_file in tqdm(image_files, desc="Generando archivos .txt"):
         image_path = os.path.join(subrecorte_dir, image_file)
         
         # Abrimos la imagen georeferenciada con rasterio
         with rasterio.open(image_path) as src:
             # Obtener las coordenadas geográficas de la imagen (bounding box)
-            xmin, ymin, xmax, ymax = src.bounds  # Estos son los límites geográficos de la imagen
+            xmin, ymin, xmax, ymax = src.bounds
 
         # Filtrar las coordenadas que caen dentro de las coordenadas geográficas de la imagen
         filtered_data = data[
@@ -58,15 +59,12 @@ def generar_txt_yolo(
 
         # Crear el archivo .txt para este tile
         if not filtered_data.empty:
-            # Crear el archivo .txt para este tile
             output_path = os.path.join(coords_dir, f"{os.path.splitext(image_file)[0]}.txt")
             filtered_data[['class', 'x_center', 'y_center', 'width', 'height']].to_csv(
                 output_path, sep=' ', index=False, header=False
             )
 
     print(f"Archivos .txt generados en {coords_dir}")
-    return filtered_data
-
 
 
 
