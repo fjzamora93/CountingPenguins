@@ -24,7 +24,6 @@ def get_img_info(img_path: str) -> dict:
 
     with rasterio.open(img_path) as src:
         transform = src.transform  # Transformación de coordenadas (Affine)
-        
         # Coordenadas de las esquinas
         top_left = (transform.c, transform.f)  # Esquina superior izquierda
         top_right = (transform * (src.width, 0))  # Esquina superior derecha
@@ -53,7 +52,7 @@ def get_img_info(img_path: str) -> dict:
         img_dict['bottom_left'] = bottom_left
         img_dict['bottom_right'] = bottom_right
         img_dict['width'] = width
-        img_dict['height'] = height
+        img_dict['Height'] = height
         img_dict['crs'] = crs
 
         for key, value in src.profile.items():
@@ -153,3 +152,82 @@ def crop_tile_into_subrecortes(
                         
                     with rasterio.open(output_path, 'w', **cropped_meta) as dst:
                         dst.write(cropped_image)
+
+
+
+
+def crop_tile_into_subrecortes_flipped(tiff_file, coords_csv, output_dir, tile_size=640, overlap=0):
+    """
+    Recorta una imagen en tiles de tamaño especificado (tile_size) con solapamiento (overlap),
+    manteniendo el flip de coordenadas geográficas. También filtra y guarda las coordenadas CSV
+    correspondientes a cada subrecorte.
+
+    Args:
+        image_path (str): Ruta a la imagen raster.
+        coords_csv (str): Ruta al archivo CSV con coordenadas de puntos.
+        output_dir (str): Carpeta de salida para guardar los subrecortes y los CSV correspondientes.
+        tile_size (int, opcional): Tamaño de los tiles en píxeles. Por defecto, 640x640.
+        overlap (float, opcional): Porcentaje de solapamiento entre tiles. Por defecto, 0.2 (20%).
+    """
+    # Crear el directorio de salida si no existe
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Cargar las coordenadas del CSV
+    coords_df = pd.read_csv(coords_csv)
+
+    # Abrir el archivo raster
+    with rasterio.open(tiff_file) as src:
+        transform = src.transform
+        width = src.width
+        height = src.height
+
+        # Calcular el tamaño del solapamiento en píxeles
+        step = int(tile_size * (1 - overlap))
+
+        # Recorrer la imagen en tiles
+        tile_id = 1
+        for upper in range(0, height, step):
+            for left in range(0, width, step):
+                lower = min(upper + tile_size, height)
+                right = min(left + tile_size, width)
+
+                # Crear ventana para el subrecorte
+                window = Window.from_slices((upper, lower), (left, right))
+
+                # Coordenadas geográficas del subrecorte (manteniendo flipped)
+                top_left_coords = rasterio.transform.xy(transform, upper, left, offset="ul")
+                bottom_right_coords = rasterio.transform.xy(transform, lower, right, offset="lr")
+                min_x, max_y = top_left_coords
+                max_x, min_y = bottom_right_coords
+
+                # Leer el subrecorte
+                subarray = src.read(window=window)
+
+                # Guardar el subrecorte como un nuevo archivo
+                output_tile_path = os.path.join(output_dir, f"tile_{tile_id:04d}.tif")
+                profile = src.profile
+                profile.update({
+                    'height': window.height,
+                    'width': window.width,
+                    'transform': rasterio.windows.transform(window, transform)
+                })
+
+                with rasterio.open(output_tile_path, 'w', **profile) as dst:
+                    dst.write(subarray)
+
+                # Filtrar las coordenadas dentro de este subrecorte
+                filtered_coords = coords_df[
+                    (coords_df["x_center"] >= min_x) &
+                    (coords_df["x_center"] <= max_x) &
+                    (coords_df["y_center"] <= max_y) &  # Flip: max_y aquí corresponde a "superior"
+                    (coords_df["y_center"] >= min_y)    # Flip: min_y aquí corresponde a "inferior"
+                ]
+
+                # Guardar las coordenadas filtradas
+                output_csv_path = os.path.join(output_dir, f"tile_{tile_id:04d}_coords.csv")
+                filtered_coords.to_csv(output_csv_path, index=False)
+
+                # Incrementar el identificador del tile
+                tile_id += 1
+
+    print(f"Proceso completado. Tiles guardados en {output_dir}")
