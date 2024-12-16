@@ -10,6 +10,8 @@ datasets/
 coords/
 cut_tiles/
 datasets.zip
+negatives/
+test/
 
 # Archivos de caché y otros archivos innecesarios
 __pycache__/
