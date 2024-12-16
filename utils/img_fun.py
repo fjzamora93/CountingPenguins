@@ -62,94 +62,88 @@ def get_img_info(img_path: str) -> dict:
     return img_dict
 
 
-
 def crop_tile_into_subrecortes(
         tiff_file: str,
         output_dir: str,
-        num_tile: int,
         coords_csv: str = './coords/yolo_coords.csv',
-        rows: int = 10,
-        cols: int = 10,
+        tile_size: int = 640,
+        overlap: int = 128,
         is_negative: bool = False
 ) -> None:
     """
-    Recorta una imagen grande del ortmosoaico en subrecortes de aproximadamente 500x500 píxeles,
+    Recorta una imagen grande del ortomosaico en subrecortes de 640x640 píxeles con un solapamiento de 256 píxeles,
     guardando solo los recortes que contienen al menos una coordenada del archivo CSV.
 
     Args:
     - tiff_file: str - Ruta al archivo TIFF que se desea recortar.
     - output_dir: str - Directorio donde se guardarán los subrecortes.
-    - num_tile: int - Número de tile que se está procesando.
     - coords_csv: str - Ruta al archivo CSV con las coordenadas (class, x_center, y_center, width, height).
-    - rows: int - Número de filas en las que se dividirá la imagen (por defecto 20).
-    - cols: int - Número de columnas en las que se dividirá la imagen (por defecto 20).
+    - tile_size: int - Tamaño de los subrecortes (por defecto 640).
+    - overlap: int - Tamaño del solapamiento entre subrecortes (por defecto 256).
+    - is_negative: bool - Si se deben guardar subrecortes sin coordenadas (por defecto False).
     """
+
     # Leer coordenadas del archivo CSV
-    # Leer coordenadas con pandas
     coords_df = pd.read_csv(coords_csv, header=None, names=["class", "x_center", "y_center", "width", "height"])
     coords_df["x_center"] = pd.to_numeric(coords_df["x_center"], errors="coerce")
     coords_df["y_center"] = pd.to_numeric(coords_df["y_center"], errors="coerce")
 
     # Eliminar filas con valores no numéricos
     coords_df = coords_df.dropna(subset=["x_center", "y_center"])
+
     # Obtener información de la imagen
     with rasterio.open(tiff_file) as src:
         WIDTH = src.width
         HEIGHT = src.height
         transform = src.transform  # Transformación geográfica de la imagen
 
-    # Definir el tamaño de cada subrecorte
-    tile_width = WIDTH // cols
-    tile_height = HEIGHT // rows
+    # Calcular el paso entre tiles considerando el solapamiento
+    step = tile_size - overlap
 
+    # Recorrer filas y columnas según el paso calculado
     with rasterio.open(tiff_file) as src:
-        for i in range(rows):
-            for j in range(cols):
-                # Calcular las coordenadas del recorte
-                left = j * tile_width
-                upper = i * tile_height
-                right = left + tile_width
-                lower = upper + tile_height
+        for upper in range(0, HEIGHT, step):
+            for left in range(0, WIDTH, step):
+                # Calcular los límites del recorte
+                lower = min(upper + tile_size, HEIGHT)
+                right = min(left + tile_size, WIDTH)
+
+                # Crear ventana de recorte
+                window = Window(left, upper, right - left, lower - upper)
+                cropped_image = src.read(window=window)
 
                 # Transformar los píxeles del recorte a coordenadas geográficas
                 top_left_coords = rasterio.transform.xy(transform, upper, left, offset="ul")
-                bottom_right_coords = rasterio.transform.xy(transform, lower, right, offset="lr")
-
                 min_x, max_y = top_left_coords
-                max_x, min_y = bottom_right_coords
 
                 # Filtrar coordenadas dentro del recorte
                 filtered_coords = coords_df[
-                    (coords_df["x_center"] >= min_x) & (coords_df["x_center"] <= max_x) &
-                    (coords_df["y_center"] >= min_y) & (coords_df["y_center"] <= max_y)
+                    (coords_df["x_center"] >= min_x) & (coords_df["x_center"] <= min_x + (right - left) * transform.a) &
+                    (coords_df["y_center"] <= max_y) & (coords_df["y_center"] >= max_y - (lower - upper) * abs(transform.e))
                 ]
 
-             
-                # Crear ventana de recorte
-                window = Window(left, upper, tile_width, tile_height)
-                cropped_image = src.read(window=window)
-
-                # Guardar el recorte
+                # Actualizar metadatos para el subrecorte
                 cropped_meta = src.meta.copy()
                 cropped_meta.update({
-                    "height": tile_height,
-                    "width": tile_width,
+                    "height": lower - upper,
+                    "width": right - left,
                     "transform": rasterio.windows.transform(window, src.transform)
                 })
 
+                # Guardar el recorte
+                imagename = os.path.splitext(os.path.basename(tiff_file))[0]
+                filename = f"{imagename}_{min_x}_{max_y}.tiff"
+                output_path = os.path.join(output_dir, filename)
+
                 if is_negative:
                     if filtered_coords.empty:
-                        print("Coordenadas vacías... guardando")
-                        filename = f"negative_{i * cols + j + 1}.tiff"
-                        output_path = f"{output_dir}/{filename}"
                         with rasterio.open(output_path, 'w', **cropped_meta) as dst:
                             dst.write(cropped_image)
                 else:
-                    # Solo guardar si hay coordenadas
-                    if filtered_coords.empty:
-                        continue  # No guardar imágenes sin coordenadas si no queremos negativos
-                    filename = f"{num_tile}_{i * cols + j + 1}.tiff"
-                    output_path = f"{output_dir}/{filename}"
+                    # Solo guardar si hay coordenadas y si la imagen tiene 640px
+                    if filtered_coords.empty or cropped_image.shape[1] != 640 or cropped_image.shape[2] != 640:
+                        continue  
+
+                        
                     with rasterio.open(output_path, 'w', **cropped_meta) as dst:
                         dst.write(cropped_image)
-                
