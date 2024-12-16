@@ -136,9 +136,15 @@ def crop_tile_into_subrecortes(
                 output_path = os.path.join(output_dir, filename)
 
                 if is_negative:
+                    txt_output_dir = os.path.join("coords", "negatives")
+                    os.makedirs(txt_output_dir, exist_ok=True)
                     if filtered_coords.empty:
                         with rasterio.open(output_path, 'w', **cropped_meta) as dst:
                             dst.write(cropped_image)
+                        # Crear un txt vacío para cada imagen que cumpla esta condición
+                        txt_file_path = os.path.join(txt_output_dir, os.path.basename(output_path).replace('.tiff', '.txt'))
+                        with open(txt_file_path, 'w') as txt_file:
+                            pass  
                 else:
                     # Solo guardar si hay coordenadas y si la imagen tiene 640px
                     if filtered_coords.empty or cropped_image.shape[1] != 640 or cropped_image.shape[2] != 640:
