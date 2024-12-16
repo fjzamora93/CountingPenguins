@@ -156,78 +156,91 @@ def crop_tile_into_subrecortes(
 
 
 
-def crop_tile_into_subrecortes_flipped(tiff_file, coords_csv, output_dir, tile_size=640, overlap=0):
+def crop_tile_into_subrecortes_flipped(
+        tiff_file: str,
+        output_dir: str,
+        coords_csv: str = './coords/yolo_coords.csv',
+        rows: int = 10,
+        cols: int = 10,
+        is_negative: bool = False
+) -> None:
     """
-    Recorta una imagen en tiles de tamaño especificado (tile_size) con solapamiento (overlap),
-    manteniendo el flip de coordenadas geográficas. También filtra y guarda las coordenadas CSV
-    correspondientes a cada subrecorte.
+    Recorta una imagen grande del ortmosoaico en subrecortes de aproximadamente 500x500 píxeles,
+    guardando solo los recortes que contienen al menos una coordenada del archivo CSV.
 
     Args:
-        image_path (str): Ruta a la imagen raster.
-        coords_csv (str): Ruta al archivo CSV con coordenadas de puntos.
-        output_dir (str): Carpeta de salida para guardar los subrecortes y los CSV correspondientes.
-        tile_size (int, opcional): Tamaño de los tiles en píxeles. Por defecto, 640x640.
-        overlap (float, opcional): Porcentaje de solapamiento entre tiles. Por defecto, 0.2 (20%).
+    - tiff_file: str - Ruta al archivo TIFF que se desea recortar.
+    - output_dir: str - Directorio donde se guardarán los subrecortes.
+    - coords_csv: str - Ruta al archivo CSV con las coordenadas (class, x_center, y_center, width, height).
+    - rows: int - Número de filas en las que se dividirá la imagen (por defecto 20).
+    - cols: int - Número de columnas en las que se dividirá la imagen (por defecto 20).
     """
-    # Crear el directorio de salida si no existe
-    os.makedirs(output_dir, exist_ok=True)
+    # Leer coordenadas del archivo CSV
+    # Leer coordenadas con pandas
+    coords_df = pd.read_csv(coords_csv, header=None, names=["class", "x_center", "y_center", "width", "height"])
+    coords_df["x_center"] = pd.to_numeric(coords_df["x_center"], errors="coerce")
+    coords_df["y_center"] = pd.to_numeric(coords_df["y_center"], errors="coerce")
 
-    # Cargar las coordenadas del CSV
-    coords_df = pd.read_csv(coords_csv)
-
-    # Abrir el archivo raster
+    # Eliminar filas con valores no numéricos
+    coords_df = coords_df.dropna(subset=["x_center", "y_center"])
+    # Obtener información de la imagen
     with rasterio.open(tiff_file) as src:
-        transform = src.transform
-        width = src.width
-        height = src.height
+        WIDTH = src.width
+        HEIGHT = src.height
+        transform = src.transform  # Transformación geográfica de la imagen
 
-        # Calcular el tamaño del solapamiento en píxeles
-        step = int(tile_size * (1 - overlap))
+    # Definir el tamaño de cada subrecorte
+    tile_width = WIDTH // cols
+    tile_height = HEIGHT // rows
 
-        # Recorrer la imagen en tiles
-        tile_id = 1
-        for upper in range(0, height, step):
-            for left in range(0, width, step):
-                lower = min(upper + tile_size, height)
-                right = min(left + tile_size, width)
+    with rasterio.open(tiff_file) as src:
+        for i in range(rows):
+            for j in range(cols):
+                # Calcular las coordenadas del recorte
+                left = j * tile_width
+                upper = i * tile_height
+                right = left + tile_width
+                lower = upper + tile_height
 
-                # Crear ventana para el subrecorte
-                window = Window.from_slices((upper, lower), (left, right))
-
-                # Coordenadas geográficas del subrecorte (manteniendo flipped)
+                # Transformar los píxeles del recorte a coordenadas geográficas
                 top_left_coords = rasterio.transform.xy(transform, upper, left, offset="ul")
                 bottom_right_coords = rasterio.transform.xy(transform, lower, right, offset="lr")
+
                 min_x, max_y = top_left_coords
                 max_x, min_y = bottom_right_coords
 
-                # Leer el subrecorte
-                subarray = src.read(window=window)
-
-                # Guardar el subrecorte como un nuevo archivo
-                output_tile_path = os.path.join(output_dir, f"tile_{tile_id:04d}.tif")
-                profile = src.profile
-                profile.update({
-                    'height': window.height,
-                    'width': window.width,
-                    'transform': rasterio.windows.transform(window, transform)
-                })
-
-                with rasterio.open(output_tile_path, 'w', **profile) as dst:
-                    dst.write(subarray)
-
-                # Filtrar las coordenadas dentro de este subrecorte
+                # Filtrar coordenadas dentro del recorte
                 filtered_coords = coords_df[
-                    (coords_df["x_center"] >= min_x) &
-                    (coords_df["x_center"] <= max_x) &
-                    (coords_df["y_center"] <= max_y) &  # Flip: max_y aquí corresponde a "superior"
-                    (coords_df["y_center"] >= min_y)    # Flip: min_y aquí corresponde a "inferior"
+                    (coords_df["x_center"] >= min_x) & (coords_df["x_center"] <= max_x) &
+                    (coords_df["y_center"] >= min_y) & (coords_df["y_center"] <= max_y)
                 ]
 
-                # Guardar las coordenadas filtradas
-                output_csv_path = os.path.join(output_dir, f"tile_{tile_id:04d}_coords.csv")
-                filtered_coords.to_csv(output_csv_path, index=False)
+             
+                # Crear ventana de recorte
+                window = Window(left, upper, tile_width, tile_height)
+                cropped_image = src.read(window=window)
 
-                # Incrementar el identificador del tile
-                tile_id += 1
+                # Guardar el recorte
+                cropped_meta = src.meta.copy()
+                cropped_meta.update({
+                    "height": tile_height,
+                    "width": tile_width,
+                    "transform": rasterio.windows.transform(window, src.transform)
+                })
 
-    print(f"Proceso completado. Tiles guardados en {output_dir}")
+                if is_negative:
+                    if filtered_coords.empty:
+                        print("Coordenadas vacías... guardando")
+                        filename = f"negative_{i * cols + j + 1}.tiff"
+                        output_path = f"{output_dir}/{filename}"
+                        with rasterio.open(output_path, 'w', **cropped_meta) as dst:
+                            dst.write(cropped_image)
+                else:
+                    # Solo guardar si hay coordenadas
+                    if filtered_coords.empty:
+                        continue  # No guardar imágenes sin coordenadas si no queremos negativos
+                    filename = f"test_{i * cols + j + 1}.tiff"
+                    output_path = f"{output_dir}/{filename}"
+                    with rasterio.open(output_path, 'w', **cropped_meta) as dst:
+                        dst.write(cropped_image)
+                

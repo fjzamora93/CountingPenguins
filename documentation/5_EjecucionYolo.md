@@ -118,22 +118,47 @@ Para realizar nuevas predicciones, se puede ejecutar el siguiente comando:
 datasets/penguin_dataset/images/train
 
 ```bash
-yolo detect predict model=runs/detect/train/weights/best.pt source=./test_images
+yolo detect predict model=runs/detect/train2/weights/best.pt source=./test/img
 
 # Para guardar las métricas
 
 yolo detect predict model=runs/train4/weights/best.pt source=./datasets/test save_txt=True
 
-yolo detect predict model=runs/train4/weights/best.pt source=./datasets/penguin_dataset/images/val save_txt=True
+yolo detect predict model=runs/detect/train2/weights/best.pt source=./test/img save_txt=True
 
 ```
+# Realización de test
+
+Comenzamos editando nuestro archivo yaml para indicar donde se van a alejar nuestros TEST.
+
+Creamos la carpeta de test y seguimos la misma estructura para las etiquetas -funciona igual que con train y con val.
+
+Una vez hecho esto, podemos ejecutar el siguiente comando:
+
+
+```bash	
+$ yolo val model=runs/detect/train2/weights/best.pt data=./datasets/penguin_dataset_windows.yaml
+```
+
+Si quieres parametrizar el umbral de confianza o el iou, puedes parametrizarlo asi:
+
+```bash
+yolo val model=runs/detect/train2/weights/best.pt data=./datasets/penguin_dataset_windows.yaml conf=0.5 iou=0.51
+
+```
+
+El umbral de confianza afecta tanto a falsos positivos como a falsos negativos, pero en mayor medida a los falsos negativos cuando ajustas un umbral alto de confianza.
+
+Bajar el umbral de confianza reducirá los falsos negativos (es decir, el fondo dejará de verse como un pingüino), pero al mismo tiempo aumentará los falsos positivos. Dado este caso, este escenario puede ser deseable, ya que manualmente luego es posible corregir los falsos positivos desmarcándolos. Sin embargo, volver a marcar un pingüino que no fue marcado la primera vez, es más complicado.
 
 # Posibles fallos del modelo
 
 Rebajar el nivel de confianza. Si el nivel de confianza es muy alto, no reportará resultados, así que puede ser bueno rebajarlo.
+
+- Procura mantener el iou por encima del 51%. El iou se refiere a los pinguinos que están justo en los bordes. Necesitamos que haya más de un 51% de pingüino para que lo detecte.
   
 ```bash
-yolo detect predict model=runs/train4/weights/best.pt source=./datasets/test conf=0.01 iou=0.3 save=True save_txt=True
+yolo detect predict model=runs/train4/weights/best.pt source=./test/img conf=0.5 iou=0.51 save=True save_txt=True
 
 ```
 
