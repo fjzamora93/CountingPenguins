@@ -37,7 +37,7 @@ def generar_txt_yolo(
     os.makedirs(coords_dir, exist_ok=True)
     
     # Obtener los nombres de las imágenes (tiles)
-    image_files = [f for f in os.listdir(subrecorte_dir) if f.endswith(('.tif', '.png', '.tiff'))]
+    image_files = [f for f in os.listdir(subrecorte_dir) if f.endswith(('.tif', '.png', '.tiff', '.jpg'))]
 
     if not image_files:
         print("No se encontraron imágenes en el directorio especificado.")
